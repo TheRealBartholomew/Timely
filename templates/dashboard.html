@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Dashboard - {{ today.strftime('%A, %B %d, %Y') }}</h2>
+    
+    <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+        <form action="{{ url_for('generate_schedule') }}" method="POST">
+            <button type="submit">📅 Generate Schedule</button>
+        </form>
+        <button onclick="window.location.href='{{ url_for('export_csv') }}'">📤 Export CSV</button>
+    </div>
+
+    <h3>Today's Schedule</h3>
+    {% if schedules %}
+        {% for schedule in schedules %}
+            <div class="task schedule">
+                {% if schedule.regularTasks %}
+                    <strong>{{ schedule.regularTasks.name if schedule.regularTasks.name else 'Unknown Task' }}</strong><br>
+                    🕐 {{ schedule.start_time }} - {{ schedule.end_time }}<br>
+                    Length: {{ schedule.regularTasks.length }} hours
+                {% else %}
+                    <strong>{{ schedule.tasks.name if schedule.tasks.name else 'Unknown Task' }}</strong><br>
+                    🕐 {{ schedule.start_time }} - {{ schedule.end_time }}<br>
+                    Priority: {{ schedule.tasks.priority if schedule.tasks.priority else 'N/A' }}
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No schedule yet. Click "Generate Schedule" to create one.</p>
+    {% endif %}
+
+    <h3>Your Tasks</h3>
+    {% if tasks %}
+        {% for task in tasks %}
+            <div class="task 
+                {% if task.priority > 7 %}priority-high
+                {% elif task.priority > 4 %}priority-medium
+                {% else %}priority-low{% endif %}">
+                <strong>{{ task.name }}</strong><br>
+                Effort: {{ task.effort }}/10 | Urgency: {{ task.urgency }}/10 | Duration: {{ task.length }}h<br>
+                Priority Score: {{ task.priority }}
+                
+                <form action="{{ url_for('delete_task', task_id=task.task_id) }}" method="POST" style="display:inline;">
+                    <button type="submit" style="background: #f44336; margin-left: 10px;" onclick="return confirm('Are you sure?')">Delete</button>
+                </form>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No tasks yet. <a href="{{ url_for('create_task') }}">Create your first task</a></p>
+    {% endif %}
+
+    <h3>Your Regular Tasks</h3>
+    {% if regular_tasks %}
+        {% for reg_task in regular_tasks %}
+            <div class="task">
+                <strong>{{ reg_task.name }}</strong><br>
+                Duration: {{ reg_task.length }}h<br>
+                
+                <form action="{{ url_for('delete_task', task_id=reg_task.regularTaskId) }}" method="POST" style="display:inline;">
+                    <button type="submit" style="background: #f44336; margin-left: 10px;" onclick="return confirm('Are you sure?')">Delete</button>
+                </form>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No regular tasks yet. <a href="{{ url_for('create_task') }}">Create your first regular task</a></p>
+    {% endif %}
+{% endblock %}

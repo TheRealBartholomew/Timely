@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timely - Task Scheduler</title>
+    <style>
+        /* Base Dark Styles */
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: #121212; 
+            color: #e0e0e0; 
+        }
+        
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: #1e1e1e; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .header { 
+            background: #2e7d32; /* Slightly darker green for dark mode */
+            color: white; 
+            padding: 15px; 
+            margin: -20px -20px 20px -20px; 
+            border-radius: 8px 8px 0 0; 
+        }
+
+        .nav { margin-bottom: 20px; }
+        .nav a { margin-right: 15px; text-decoration: none; color: #FFFFFF; font-weight: bold; }
+        .nav a:hover { color: white; }
+
+        /* Task & Schedule Cards */
+        .task { border: 1px solid #333; padding: 10px; margin: 10px 0; border-radius: 4px; background: #252525; }
+        .schedule { background: #1b2e1b; border-left: 4px solid #4CAF50; }
+        
+        .priority-high { border-left: 4px solid #cf6679; }
+        .priority-medium { border-left: 4px solid #ffb74d; }
+        .priority-low { border-left: 4px solid #81c784; }
+
+        /* Dark Mode Flashes (Darker backgrounds, lighter text) */
+        .flash { padding: 10px; margin: 10px 0; border-radius: 4px; border: 1px solid transparent; }
+        .flash.success { background: #1b2e1b; color: #81c784; border-color: #2e7d32; }
+        .flash.error { background: #371e1e; color: #cf6679; border-color: #b00020; }
+        .flash.warning { background: #332b00; color: #ffd54f; border-color: #f9a825; }
+
+        /* Form Elements */
+        button { background: #2E7D32; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #45a049; }
+        
+        input, select { 
+            padding: 10px; 
+            margin: 5px 0; 
+            width: 100%; 
+            box-sizing: border-box; 
+            background: #2d2d2d; 
+            border: 1px solid #444; 
+            color: white; 
+            border-radius: 4px;
+        }
+
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #bbb; }
+        
+        .delete-btn { background: #cf6679; margin-left: 10px; color: #000; }
+        .delete-btn:hover { background: #b00020; color: #fff; }
+
+        .classic-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 15px; }
+        .classic-toggle input[type="checkbox"] { width: 18px; height: 18px; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📅 Timely - Task Scheduler</h1>
+            {% if session.get('user_id') %}
+                <div class="nav">
+                    <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                    <a href="{{ url_for('create_task') }}">Create Task</a>
+                    <a href="{{ url_for('logout') }}">Logout</a>
+                    <span style="float: right; color: #ccc; font-size: 0.9em;">{{ session.get('email', '') }}</span>
+                </div>
+            {% endif %}
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

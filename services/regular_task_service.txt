@@ -1,0 +1,73 @@
+from database_client import SupabaseClient
+from core.models.regular_task import RegularTask
+import uuid
+
+class RegularTaskService:
+    """Database operations for regular tasks (Objectives 6-7)"""
+    
+    def __init__(self):
+        self.client = SupabaseClient.get_client()
+    
+    def add_regular_task(self, user_id, task_name, duration, effort=5, urgency=5):
+        """Add regular task (Objective 6)"""
+        regular_task_id = str(uuid.uuid4())
+        
+        try:
+            response = self.client.table('RegularTask').insert({
+                'regularTaskId': regular_task_id,
+                'userId': user_id,
+                'task_name': task_name,
+                'default_length': duration,
+                'default_effort': effort,
+                'default_urgency': urgency
+            }).execute()
+            
+            if response.data:
+                return RegularTask(
+                    regular_task_id=regular_task_id,
+                    user_id=user_id,
+                    task_name=task_name,
+                    default_length=duration,
+                    default_effort=effort,
+                    default_urgency=urgency
+                )
+            return None
+        
+        except Exception as e:
+            print(f"Error adding regular task: {e}")
+            return None
+    
+    def get_regular_tasks(self, user_id):
+        """Retrieve all regular tasks for user"""
+        try:
+            response = self.client.table('RegularTask').select('*').eq('userId', user_id).order('task_name').execute()
+            
+            tasks = []
+            for data in response.data:
+                task = RegularTask(
+                    regular_task_id=data['regularTaskId'],
+                    user_id=data['userId'],
+                    task_name=data['task_name'],
+                    default_length=data['default_length'],
+                    default_effort=data['default_effort'],
+                    default_urgency=data['default_urgency'],
+                    created_at=data.get('created_at')
+                )
+                tasks.append(task)
+            
+            return tasks
+        
+        except Exception as e:
+            print(f"Error retrieving regular tasks: {e}")
+            return []
+    
+    def remove_regular_task(self, regular_task_id, user_id):
+        """Remove regular task (Objective 7)"""
+        try:
+            response = self.client.table('RegularTask').delete().eq('regularTaskId', regular_task_id).eq('userId', user_id).execute()
+            
+            return response.data is not None
+        
+        except Exception as e:
+            print(f"Error removing regular task: {e}")
+            return False
