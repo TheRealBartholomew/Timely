@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Task History</h2>
+    
+    <div style="background: #2d2d2d; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+        <strong>Total Completed Tasks:</strong> {{ total_count }}
+        <span style="margin-left: 20px;">
+        </span>
+    </div>
+
+    <!-- Recommended tasks (Objective 5) -->
+    {% if recommended_tasks %}
+    <div style="margin-bottom: 20px;">
+        <h3>Most Frequent Tasks</h3>
+        <p style="color: #bbb; font-size: 0.9em;">These are your most commonly completed tasks</p>
+        {% for task_name, count in recommended_tasks %}
+            <div class="task" style="background: #1b2e1b;">
+                <strong>{{ task_name }}</strong> - Completed {{ count }} times
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- History records (last 90 days - Objective 3b) -->
+    <h3>Recent History (Last 90 Days)</h3>
+    <p style="color: #bbb; font-size: 0.9em; margin-bottom: 15px;">
+        Showing up to 50 most recent tasks
+    </p>
+    
+    {% if history %}
+        {% for record in history %}
+            <div class="task">
+                <strong>{{ record.task_name if record.task_name else 'Deleted Task (' ~ record.taskId ~ ')' }}</strong>
+                📅 {{ record.date.strftime('%Y-%m-%d') }} | 
+                🕐 {{ record.start_time.strftime('%H:%M') }} - {{ record.end_time.strftime('%H:%M') }}<br> 
+                
+                {% if record.effort and record.urgency %}
+                    Effort: {{ record.effort }}/10 | Urgency: {{ record.urgency }}/10<br>
+                {% endif %}
+                
+                <small style="color: #888;">
+                    Completed: {{ record.completed_at }}
+                </small>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No history yet. Complete some tasks to see them here!</p>
+    {% endif %}
+
+    <button onclick="window.location.href='{{ url_for('dashboard') }}'">
+        ← Back to Dashboard
+    </button>
+{% endblock %}

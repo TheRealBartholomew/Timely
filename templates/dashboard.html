@@ -7,6 +7,7 @@
             <button type="submit">📅 Generate Schedule</button>
         </form>
         <button onclick="window.location.href='{{ url_for('export_csv') }}'">📤 Export CSV</button>
+        <button onclick="window.location.href='{{ url_for('view_history') }}'">📊 View History</button>
     </div>
 
     <h3>Today's Schedule</h3>
@@ -21,6 +22,12 @@
                     <strong>{{ schedule.tasks.name if schedule.tasks.name else 'Unknown Task' }}</strong><br>
                     🕐 {{ schedule.start_time }} - {{ schedule.end_time }}<br>
                     Priority: {{ schedule.tasks.priority if schedule.tasks.priority else 'N/A' }}
+
+                    <form action="{{ url_for('complete_task', schedule_id=schedule.schedule_id) }}" 
+                          method="POST" style="display:inline; margin-left: 10px;">
+                        <button type="submit" style="background: #4CAF50;">✓ Complete</button>
+                    </form>
+
                 {% endif %}
             </div>
         {% endfor %}

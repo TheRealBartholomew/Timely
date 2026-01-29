@@ -12,6 +12,7 @@ from core.models.task import Task
 from core.models.schedule import Schedule
 from core.models.regular_task import RegularTask
 from core.algorithms.scheduler import GreedyScheduler
+from core.algorithms.history import HistoryService
 
 load_dotenv()
 
@@ -23,6 +24,10 @@ scheduler = GreedyScheduler()
 
 # Supabase client
 db = SupabaseClient()
+
+# History service
+history_service = HistoryService()
+
 
 @app.route('/')
 def home():
@@ -398,6 +403,85 @@ def delete_task(task_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@app.route('/complete_task/<schedule_id>', methods=['POST'])
+def complete_task(schedule_id):
+    """Record task completion in history"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+    
+    try:
+        # Get schedule details
+        sched_response = db.get_client().table('schedules').select(
+            '*, tasks(name)'
+        ).eq('schedule_id', schedule_id).single().execute()
+        
+        if not sched_response.data:
+            return jsonify({'error': 'Schedule not found'}), 404
+        
+        schedule = sched_response.data
+        
+        # Record to history
+        success = history_service.record_task_completion(
+            user_id=session['user_id'],
+            task_id=schedule['task_id'],
+            start_time=time.fromisoformat(schedule['start_time']),
+            end_time=time.fromisoformat(schedule['end_time']),
+            date_obj=datetime.fromisoformat(schedule['date']).date()
+        )
+        
+        if success:
+            flash('Task marked as complete!', 'success')
+        else:
+            flash('Failed to record completion', 'error')
+        
+        return redirect(url_for('dashboard'))
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/history')
+def view_history():
+    """Display task history to user"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    try:
+        # Get history for last 90 days (Objective 3b)
+        history = history_service.get_task_history(
+            user_id=session['user_id'],
+            limit=50  # Objective 3a
+        )
+        
+        # Get total count for display
+        total_count = history_service.get_history_count(session['user_id'])
+        
+        # Get most frequent tasks (Objective 5)
+        task_freq = history_service.get_task_frequency(session['user_id'])
+        recommended = sorted(task_freq.items(), key=lambda x: x[1], reverse=True)[:5]
+        
+        return render_template('history.html', 
+                             history=history,
+                             total_count=total_count,
+                             recommended_tasks=recommended)
+    
+    except Exception as e:
+        flash(f'Error loading history: {str(e)}', 'error')
+        return render_template('history.html', history=[], total_count=0)
+
+@app.route('/admin/cleanup_history', methods=['POST'])
+def cleanup_old_history():
+    """
+    Maintenance endpoint for automated cleanup.
+    Objective 3b: Remove records older than 90 days.
+    """
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authorized'}), 401
+    
+    success = history_service.delete_old_history(session['user_id'], days=90)
+    
+    return jsonify({'success': success})
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5011)
+    app.run(debug=True, host='0.0.0.0', port=5051)
 

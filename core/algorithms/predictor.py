@@ -1,50 +1,30 @@
-from collections import Counter
 from datetime import datetime, timedelta, time
+from collections import Counter
+from history import HistoryService
 
 class TimePrediction:
     """Frequency-based time prediction for recurring tasks"""
     
-    def __init__(self, history_service):
-        self.history_service = history_service
+    def __init__(self):
+        self.history_service = HistoryService()
     
     def predict_start_time(self, task_name, user_id):
         """
-        Predict most likely start time based on task history
-        
-        Args:
-            task_name (str): Name of the task
-            user_id (str): User ID
-        
-        Returns:
-            time object or None: Predicted start time
+        Predict most likely start time based on task history.
+        Objective 4a: Uses frequency analysis from previous entries.
         """
-        # Get task history from last 30 days
-        thirty_days_ago = datetime.now() - timedelta(days=30)
-        
-        history = self.history_service.get_task_history(
-            user_id=user_id,
-            task_name=task_name,
-            since_date=thirty_days_ago
+        # Uses the optimized query from history service
+        predicted_time = self.history_service.get_most_common_start_time(
+            user_id, task_name
         )
         
-        if not history:
-            return None
+        if predicted_time is None:
+            return None  # No historical data available
         
-        # Extract start times
-        start_times = [entry['start_time'] for entry in history]
-        
-        # Count frequency of each start time
-        time_frequency = Counter(start_times)
-        
-        # Return most common start time
-        if time_frequency:
-            most_common = time_frequency.most_common(1)[0]
-            return most_common[0]
-        
-        return None
+        return predicted_time
     
     def get_average_duration(self, task_name, user_id):
-        """Calculate average duration for a task"""
+        """Calculate average duration for a task from history"""
         thirty_days_ago = datetime.now() - timedelta(days=30)
         
         history = self.history_service.get_task_history(
@@ -62,20 +42,18 @@ class TimePrediction:
             start = entry['start_time']
             end = entry['end_time']
             
-            if isinstance(start, time) and isinstance(end, time):
-                start_minutes = start.hour * 60 + start.minute
-                end_minutes = end.hour * 60 + end.minute
-                duration_hours = (end_minutes - start_minutes) / 60
-                durations.append(duration_hours)
+            start_minutes = start.hour * 60 + start.minute
+            end_minutes = end.hour * 60 + end.minute
+            duration_hours = (end_minutes - start_minutes) / 60
+            durations.append(duration_hours)
         
-        if durations:
-            return sum(durations) / len(durations)
-        
-        return None
+        return sum(durations) / len(durations) if durations else None
     
     def suggest_recommended_tasks(self, user_id, limit=5):
-        """Get most frequently added tasks"""
-        # This would query the database for task frequency
+        """
+        Get most frequently added tasks.
+        Objective 5: List recommended tasks in sidebar.
+        """
         task_frequency = self.history_service.get_task_frequency(user_id)
         
         # Sort by frequency
