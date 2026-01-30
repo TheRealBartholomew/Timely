@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+
+        <h3>Adjust: {{ task.name }}</h3>
+        <form action="{{ url_for('adjust_task',task_id=task.task_id) }}" method="POST">
+            <label>Effort: <input type="number" name="effort" min="1" required value=""></label><br><br>
+            <label>Urgency: <input type="number" name="urgency" min="1" max="10"required value=""></label><br><br>
+            <label>Duration (hours): <input type="number" name="length" step="0.01" min="0.25" required value=""></label><br><br>
+            <button type="submit">Save</button>
+        </form>
+{% endblock %}

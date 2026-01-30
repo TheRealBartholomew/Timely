@@ -74,17 +74,20 @@
         .classic-toggle input[type="checkbox"] { width: 18px; height: 18px; margin: 0; }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
+        {% if request.endpoint != 'adjust_task_popup' %}
             <h1>📅 Timely - Task Scheduler</h1>
-            {% if session.get('user_id') %}
-                <div class="nav">
-                    <a href="{{ url_for('dashboard') }}">Dashboard</a>
-                    <a href="{{ url_for('create_task') }}">Create Task</a>
-                    <a href="{{ url_for('logout') }}">Logout</a>
-                    <span style="float: right; color: #ccc; font-size: 0.9em;">{{ session.get('email', '') }}</span>
-                </div>
+                {% if session.get('user_id') %}
+                    <div class="nav">
+                        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                        <a href="{{ url_for('create_task') }}">Create Task</a>
+                        <a href="{{ url_for('logout') }}">Logout</a>
+                        <span style="float: right; color: #ccc; font-size: 0.9em;">{{ session.get('email', '') }}</span>
+                    </div>
+                {% endif %}
             {% endif %}
         </div>
 

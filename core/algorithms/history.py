@@ -151,19 +151,19 @@ class HistoryService:
         try:
             # Get all history with task names
             response = self.client.table('taskHistory').select(
-                'tasks(name)'
+                'tasks(name, task_id)'
             ).eq('userId', user_id).execute()
             
             # Count task frequencies
-            from collections import Counter
-            task_names = [
-                record['tasks']['name'] 
-                for record in response.data 
-                if record.get('tasks')
-            ]
-            task_counter = Counter(task_names)
+            task_data = {}
+            for record in response.data:
+                name = record['tasks']['name']
+                task_id = record['tasks']['task_id']
+                if name not in task_data:
+                    task_data[name] = {'count': 0, 'task_id': task_id}
+                task_data[name]['count'] += 1
             
-            return dict(task_counter)
+            return task_data
         
         except Exception as e:
             print(f"Error getting task frequency: {e}")

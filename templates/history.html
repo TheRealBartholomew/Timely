@@ -13,9 +13,14 @@
     <div style="margin-bottom: 20px;">
         <h3>Most Frequent Tasks</h3>
         <p style="color: #bbb; font-size: 0.9em;">These are your most commonly completed tasks</p>
-        {% for task_name, count in recommended_tasks %}
+        {% for task_name, count, task_id in recommended_tasks %}
             <div class="task" style="background: #1b2e1b;">
                 <strong>{{ task_name }}</strong> - Completed {{ count }} times
+
+                <form action="{{ url_for('add_again', task_id=task_id) }}" method="post">
+                    <button type="submit" style="background: #4CAF50; margin-left: 10px;">+ Add Again</button>
+                </form>
+                
             </div>
         {% endfor %}
     </div>
@@ -37,7 +42,7 @@
                 {% if record.effort and record.urgency %}
                     Effort: {{ record.effort }}/10 | Urgency: {{ record.urgency }}/10<br>
                 {% endif %}
-                
+
                 <small style="color: #888;">
                     Completed: {{ record.completed_at }}
                 </small>

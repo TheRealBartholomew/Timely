@@ -22,11 +22,16 @@
                     <strong>{{ schedule.tasks.name if schedule.tasks.name else 'Unknown Task' }}</strong><br>
                     🕐 {{ schedule.start_time }} - {{ schedule.end_time }}<br>
                     Priority: {{ schedule.tasks.priority if schedule.tasks.priority else 'N/A' }}
+                    {% if schedule.schedule_id not in session.get('completed_tasks', []) %}
 
-                    <form action="{{ url_for('complete_task', schedule_id=schedule.schedule_id) }}" 
-                          method="POST" style="display:inline; margin-left: 10px;">
-                        <button type="submit" style="background: #4CAF50;">✓ Complete</button>
-                    </form>
+                        <form action="{{ url_for('complete_task', schedule_id=schedule.schedule_id) }}" 
+                            method="POST" style="display:inline; margin-left: 10px;">
+                            <button type="submit" style="background: #4CAF50;">✓ Complete</button>
+                        </form>
+                    {% else %}
+                        <span style="color: #81c784; font-weight: bold; margin-left: 10px;">✔ Completed</span>
+                    {% endif %}
+                    
 
                 {% endif %}
             </div>
@@ -45,10 +50,17 @@
                 <strong>{{ task.name }}</strong><br>
                 Effort: {{ task.effort }}/10 | Urgency: {{ task.urgency }}/10 | Duration: {{ task.length }}h<br>
                 Priority Score: {{ task.priority }}
+                <button type="button" onclick="window.open('{{ url_for('adjust_task_popup', task_id=task.task_id) }}', 'popup', 'width=400,height=500')" 
+                    style="background: #0c4b82; margin-right: 10px;">
+                    Adjust
+                </button>
                 
                 <form action="{{ url_for('delete_task', task_id=task.task_id) }}" method="POST" style="display:inline;">
-                    <button type="submit" style="background: #f44336; margin-left: 10px;" onclick="return confirm('Are you sure?')">Delete</button>
+                    <button type="submit" style="background: #f44336; margin-left: 10px;">Delete</button>
                 </form>
+
+
+                
             </div>
         {% endfor %}
     {% else %}
@@ -63,7 +75,7 @@
                 Duration: {{ reg_task.length }}h<br>
                 
                 <form action="{{ url_for('delete_task', task_id=reg_task.regularTaskId) }}" method="POST" style="display:inline;">
-                    <button type="submit" style="background: #f44336; margin-left: 10px;" onclick="return confirm('Are you sure?')">Delete</button>
+                    <button type="submit" style="background: #f44336; margin-left: 10px;">Delete</button>
                 </form>
             </div>
         {% endfor %}

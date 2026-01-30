@@ -1,7 +1,7 @@
 import os
 import csv
 from io import StringIO
-from datetime import datetime, date, time, timedelta
+from datetime import datetime, date, time
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, Response
 from dotenv import load_dotenv
 
@@ -414,12 +414,12 @@ def complete_task(schedule_id):
         # Get schedule details
         sched_response = db.get_client().table('schedules').select(
             '*, tasks(name)'
-        ).eq('schedule_id', schedule_id).single().execute()
+        ).eq('schedule_id', schedule_id).execute()
         
         if not sched_response.data:
             return jsonify({'error': 'Schedule not found'}), 404
         
-        schedule = sched_response.data
+        schedule = sched_response.data[0]
         
         # Record to history
         success = history_service.record_task_completion(
@@ -431,6 +431,10 @@ def complete_task(schedule_id):
         )
         
         if success:
+            completed = session.get('completed_tasks', [])
+            completed.append(schedule_id)
+            session['completed_tasks'] = completed
+            session.modified = True
             flash('Task marked as complete!', 'success')
         else:
             flash('Failed to record completion', 'error')
@@ -438,7 +442,9 @@ def complete_task(schedule_id):
         return redirect(url_for('dashboard'))
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error in complete_task: {e}")
+        return redirect(url_for('dashboard'))
+    
 
 @app.route('/history')
 def view_history():
@@ -458,7 +464,10 @@ def view_history():
         
         # Get most frequent tasks (Objective 5)
         task_freq = history_service.get_task_frequency(session['user_id'])
-        recommended = sorted(task_freq.items(), key=lambda x: x[1], reverse=True)[:5]
+        recommended = []
+        sorted_tasks = sorted(task_freq.items(), key=lambda x: x[1]['count'], reverse=True)[:5]
+        for name, data in sorted_tasks:
+            recommended.append((name, data['count'], data['task_id']))
         
         return render_template('history.html', 
                              history=history,
@@ -481,6 +490,106 @@ def cleanup_old_history():
     success = history_service.delete_old_history(session['user_id'], days=90)
     
     return jsonify({'success': success})
+
+@app.route('/add_again/<task_id>', methods=['POST'])
+def add_again(task_id):
+    """Add a recommended task again for the user"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    try:
+        # Fetch task details
+        task_response = db.get_client().table('tasks').select('*')\
+            .eq('user_id', session['user_id'])\
+            .eq('task_id', task_id).single().execute()
+        
+        if not task_response.data:
+            flash('Task not found', 'error')
+            return redirect(url_for('view_history'))
+        
+        task_data = task_response.data
+        
+        # Create new task entry
+        new_task = {
+            'user_id': session['user_id'],
+            'name': task_data['name'],
+            'effort': task_data['effort'],
+            'urgency': task_data['urgency'],
+            'length': task_data['length']
+        }
+        
+        insert_response = db.get_client().table('tasks').insert(new_task).execute()
+        
+        if insert_response.data:
+            flash(f'Task "{task_data["name"]}" added again!', 'success')
+        else:
+            flash('Failed to add task', 'error')
+        
+        return redirect(url_for('view_history'))
+    
+    except Exception as e:
+        flash(f'Error adding task: {str(e)}', 'error')
+        return redirect(url_for('view_history'))
+    
+@app.route('/adjust_task/<task_id>', methods = ['POST'])
+def adjust_task(task_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    try:
+        task = db.get_client().table('tasks').select('*')\
+        .eq('user_id', session['user_id'])\
+        .eq('task_id', task_id).execute()
+
+        if not task.data:
+            flash('Task not found', 'error')
+            return '<script>window.opener.location.reload(); window.close();</script>'
+        
+        task_data = task.data[0]
+
+        new_task = {
+            'user_id': session['user_id'],
+            'name': task_data['name'],
+            'effort': int(request.form['effort']),
+            'urgency': int(request.form['urgency']),
+            'length': float(request.form['length'])
+        }
+
+        insert = db.get_client().table('tasks').insert(new_task).execute()
+        delete = db.get_client().table('tasks').delete()\
+        .eq('user_id', session['user_id'])\
+        .eq('task_id', task_id).execute()
+
+        if insert.data:
+            flash(f'task {task_data["name"]} adjusted', 'sucess')
+        else:
+            flash('Failed to adjust task', 'error')
+
+        return '<script>window.opener.location.reload(); window.close();</script>'
+    
+    except Exception as e:
+        flash(f'Error adjusting task: {str(e)}', 'error')
+        return '<script>window.opener.location.reload(); window.close();</script>'
+    
+@app.route('/adjust_task_popup/<task_id>')
+def adjust_task_popup(task_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    task = db.get_client().table('tasks').select('*')\
+        .eq('user_id', session['user_id'])\
+        .eq('task_id', task_id).execute()
+    
+    if not task.data:
+        flash('Task not found', 'error')
+        return redirect(url_for('dashboard'))
+    
+    task_data = task.data[0]
+
+    return render_template('popup.html', task=task_data)
+
+
+        
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5051)
